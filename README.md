@@ -161,11 +161,15 @@ if echo "$SRC_VALUE" | grep -qi "Dolby"; then
     AFTER=$(dmesg | tail -n 300)
     NEW_LOGS=$(echo "$AFTER" | grep -Fvx -f <(echo "$BEFORE"))
 
+    # FEL detection (Profile 7 - has full enhancement layer)
     if echo "$NEW_LOGS" | grep -q "el_mode:1"; then
         show_notification "Dolby Vision" "FEL detected"
-    elif echo "$NEW_LOGS" | grep -q "el_mode:0"; then
+    # MEL detection (Profile 8 - has minimal enhancement layer)
+    # Only show MEL if el_mode:0 appears in NEW logs (not just existing logs)
+    elif echo "$NEW_LOGS" | grep -qE "el_mode.*:.*0"; then
         show_notification "Dolby Vision" "MEL detected"
     fi
+    # No notification for Profile 5 (standard DV without enhancement layer)
 fi
 ```
 
@@ -173,9 +177,11 @@ fi
 
 ## Usage
 
-1. **Play Dolby Vision content**: A notification will appear showing either "FEL detected" or "MEL detected"
-2. **SDR/HDR10 content**: No notification will be displayed
-3. **Notification duration**: 10 seconds (adjustable in script)
+1. **Dolby Vision FEL (Profile 7)**: Notification appears showing "FEL detected"
+2. **Dolby Vision MEL (Profile 8)**: Notification appears showing "MEL detected"
+3. **Dolby Vision Profile 5 (no enhancement layer)**: No notification appears
+4. **SDR/HDR10 content**: No notification appears
+5. **Notification duration**: 10 seconds (adjustable in script)
 
 ---
 
@@ -238,9 +244,11 @@ show_notification() {
 ## Technical Details
 
 - **Detection Method**: Analyzes kernel messages after triggering `dv_el` debug flag
-- **FEL Detection**: Looks for `el_mode:1` in dmesg output
-- **MEL Detection**: Looks for `el_mode:0` in dmesg output
+- **FEL Detection**: Looks for `el_mode:1` in new dmesg entries (Profile 7 with full enhancement layer)
+- **MEL Detection**: Looks for `el_mode:0` in new dmesg entries (Profile 8 with minimal enhancement layer)
+- **Profile 5**: No notification shown (standard Dolby Vision without enhancement layer)
 - **Performance**: Minimal overhead, runs only at playback start
+- **Compatibility**: Works with CoreELEC Amlogic CPM builds
 
 ---
 

@@ -24,9 +24,13 @@ if echo "$SRC_VALUE" | grep -qi "Dolby"; then
     AFTER=$(dmesg | tail -n 300)
     NEW_LOGS=$(echo "$AFTER" | grep -Fvx -f <(echo "$BEFORE"))
 
+    # FEL detection (Profile 7 - has full enhancement layer)
     if echo "$NEW_LOGS" | grep -q "el_mode:1"; then
         show_notification "Dolby Vision" "FEL detected"
-    elif echo "$NEW_LOGS" | grep -q "el_mode:0"; then
+    # MEL detection (Profile 8 - has minimal enhancement layer)
+    # Only show MEL if el_mode:0 appears in NEW logs (not just existing logs)
+    elif echo "$NEW_LOGS" | grep -qE "el_mode.*:.*0"; then
         show_notification "Dolby Vision" "MEL detected"
     fi
+    # No notification for Profile 5 (standard DV without enhancement layer)
 fi
