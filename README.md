@@ -27,8 +27,6 @@ A Kodi service add-on that automatically detects and displays Dolby Vision profi
 
 - **CoreELEC** (Amlogic CPM builds)
 - **Kodi** 19+ (Python 3.x)
-- Skin with top-left notification support (e.g., Arctic Zephyr, Aeon Nox)
-
 ---
 
 ## Installation
