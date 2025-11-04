@@ -1,76 +1,126 @@
 # FEL/MEL Notification Service for Kodi on CoreELEC
 
-This Kodi service add-on displays a notification in the **top-left corner** of the screen when a Dolby Vision video is played, showing **FEL** or **MEL**. SDR/HDR10 videos are ignored.
+A Kodi service add-on that automatically detects and displays Dolby Vision profile type (FEL or MEL) when playback starts on CoreELEC Amlogic devices.
 
 ---
 
 ## Features
 
-- Detects **Dolby Vision FEL/MEL** using CoreELEC system files.
-- Shows a notification only at the **start of playback**.
-- Compatible with **CoreELEC Amlogic CPM builds**.
-- Works with Kodi skins supporting top-left notifications (e.g., Arctic Zephyr).
+- **Automatic Detection**: Identifies Dolby Vision FEL (Profile 7) or MEL (Profile 8) using CoreELEC system files
+- **Unobtrusive Notifications**: Shows a brief notification only at playback start
+- **Smart Filtering**: Ignores SDR and HDR10 content to avoid notification spam
+- **CoreELEC Optimized**: Designed specifically for CoreELEC Amlogic CPM builds
 
 ---
 
-## Installation Paths on CoreELEC
+## Requirements
 
-### 1. Add-on Folder
+- **CoreELEC** (Amlogic CPM builds)
+- **Kodi** 19+ (Python 3.x)
+- Skin with top-left notification support (e.g., Arctic Zephyr, Aeon Nox)
 
-/storage/.kodi/addons/service.fel_mel_notification/
+---
 
-yaml
-Copy code
+## Installation
 
-Place these files inside:
+### 1. Create Add-on Directory
 
-- `addon.xml`  
-- `service.py`  
+```bash
+mkdir -p /storage/.kodi/addons/service.fel_mel_notification
+```
+
+### 2. Install Files
+
+Place the following files in `/storage/.kodi/addons/service.fel_mel_notification/`:
+- `addon.xml`
+- `service.py`
 - `README.md` (optional)
 
----
+### 3. Install Detection Script
 
-### 2. Bash Script
+Create the detection script:
 
-Place the script in:
+```bash
+nano /storage/.kodi/userdata/fel_mel_notification.sh
+```
 
-/storage/.kodi/userdata/fel_mel_notification.sh
-
-bash
-Copy code
-
-Make it executable:
+Paste the script content (see below), then make it executable:
 
 ```bash
 chmod +x /storage/.kodi/userdata/fel_mel_notification.sh
-3. Update service.py
-In service.py, point to the correct script path:
+```
 
-python
-Copy code
-SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_notification.sh"
-4. addon.xml Example
-xml
-Copy code
-<addon id="service.fel_mel_notification" version="1.0.0" name="FEL/MEL Notification Service" provider-name="YourName">
+### 4. Restart Kodi
+
+```bash
+systemctl restart kodi
+```
+
+Or reboot your CoreELEC device.
+
+---
+
+## File Contents
+
+### `addon.xml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="service.fel_mel_notification" 
+       version="1.0.0" 
+       name="FEL/MEL Notification Service" 
+       provider-name="YourName">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
     </requires>
     <extension point="xbmc.service" library="service.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Dolby Vision FEL/MEL detection for CoreELEC</summary>
+        <description lang="en">Displays FEL or MEL notifications when playing Dolby Vision content on CoreELEC Amlogic devices.</description>
+        <platform>all</platform>
+        <license>MIT</license>
+    </extension>
 </addon>
-5. Bash Script (fel_mel_notification.sh)
-bash
-Copy code
+```
+
+### `service.py`
+
+```python
+import xbmc
+import subprocess
+
+SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_notification.sh"
+
+class PlaybackMonitor(xbmc.Player):
+    def onPlayBackStarted(self):
+        try:
+            subprocess.Popen([SCRIPT_PATH])
+        except Exception as e:
+            xbmc.log(f"FEL/MEL Service Error: {str(e)}", xbmc.LOGERROR)
+
+if __name__ == "__main__":
+    monitor = xbmc.Monitor()
+    player = PlaybackMonitor()
+    
+    while not monitor.abortRequested():
+        if monitor.waitForAbort(1):
+            break
+```
+
+### `fel_mel_notification.sh`
+
+```bash
 #!/bin/bash
+
 DEBUG_PATH="/sys/class/amdolby_vision/debug"
 SRC_FMT="/sys/class/video_poll/primary_src_fmt"
 
-# Wait briefly at the start of playback
+# Wait for playback to initialize
 sleep 2
 
-# Exit if no video info
+# Exit if video info unavailable
 if [ ! -f "$SRC_FMT" ]; then
     exit 0
 fi
@@ -78,63 +128,108 @@ fi
 # Read current video format
 SRC_VALUE=$(cat "$SRC_FMT" 2>/dev/null | tr -d '\0')
 
-# Check if it's Dolby Vision
+# Check if content is Dolby Vision
 if echo "$SRC_VALUE" | grep -qi "Dolby"; then
-    # Capture dmesg before and after
+    # Capture dmesg before triggering debug
     BEFORE=$(dmesg | tail -n 200)
+    
+    # Trigger EL mode detection
     echo dv_el > "$DEBUG_PATH" 2>/dev/null
     sleep 0.5
+    
+    # Capture new dmesg entries
     AFTER=$(dmesg | tail -n 200)
     NEW_LOGS=$(echo "$AFTER" | grep -Fvx -f <(echo "$BEFORE"))
 
-    # FEL or MEL detection
+    # Detect FEL (Profile 7) or MEL (Profile 8)
     if echo "$NEW_LOGS" | grep -q "el_mode:1"; then
-        kodi-send --action="Notification(Dolby Vision,FEL detected,10000)"
+        kodi-send --action="Notification(Dolby Vision,FEL (Profile 7),10000)"
     else
-        kodi-send --action="Notification(Dolby Vision,MEL detected,10000)"
+        kodi-send --action="Notification(Dolby Vision,MEL (Profile 8),10000)"
     fi
-else
-    # Optional: ignore SDR/HDR10
-    # kodi-send --action="Notification(Video,SDR/HDR10 detected,8000)"
-    exit 0
 fi
-6. Restart Kodi
-After installation:
 
-bash
-Copy code
-systemctl restart kodi
-or reboot CoreELEC.
-
-7. Testing
-Play a Dolby Vision video.
-
-You should see a top-left notification:
-
-Dolby Vision – FEL detected
-
-Dolby Vision – MEL detected
-
-Play SDR/HDR10 videos – no notification appears.
-
-Notes
-Adjust sleep in the script if notifications appear too early.
-
-Works best with skins that support top-left notifications.
-
-Check Kodi log for troubleshooting:
-
-bash
-Copy code
-tail -f /storage/.kodi/temp/kodi.log
-License
-MIT License – feel free to fork and modify for personal use.
-
-yaml
-Copy code
+exit 0
+```
 
 ---
 
-I can also **prepare the full folder structure for GitHub** including `addon.xml`, `service.py`, and this `README.md` ready to push.  
+## Usage
 
-Do you want me to do that next?
+1. **Play Dolby Vision content**: A notification will appear showing either "FEL (Profile 7)" or "MEL (Profile 8)"
+2. **SDR/HDR10 content**: No notification will be displayed
+3. **Notification duration**: 10 seconds (adjustable in script)
+
+---
+
+## Troubleshooting
+
+### No Notifications Appearing
+
+Check if the service is running:
+```bash
+tail -f /storage/.kodi/temp/kodi.log | grep "FEL/MEL"
+```
+
+Verify script permissions:
+```bash
+ls -l /storage/.kodi/userdata/fel_mel_notification.sh
+```
+
+### Notifications Appear Too Early
+
+Increase the `sleep` value in `fel_mel_notification.sh`:
+```bash
+sleep 3  # Increase from 2 to 3 seconds
+```
+
+### Testing the Detection Script
+
+Run manually during Dolby Vision playback:
+```bash
+/storage/.kodi/userdata/fel_mel_notification.sh
+```
+
+---
+
+## Customization
+
+### Change Notification Position
+
+Notification position depends on your Kodi skin settings. Check skin documentation for notification placement options.
+
+### Modify Notification Text
+
+Edit the `kodi-send` commands in `fel_mel_notification.sh`:
+```bash
+kodi-send --action="Notification(Your Title,Your Message,Duration)"
+```
+
+---
+
+## Technical Details
+
+- **Detection Method**: Analyzes kernel messages after triggering `dv_el` debug flag
+- **FEL Detection**: Looks for `el_mode:1` in dmesg output
+- **Performance**: Minimal overhead, runs only at playback start
+
+---
+
+## License
+
+MIT License - Free to use, modify, and distribute.
+
+---
+
+## Credits
+
+Created for the CoreELEC community. Contributions welcome!
+
+---
+
+## Support
+
+For issues or questions:
+- Check CoreELEC forums
+- Review Kodi logs at `/storage/.kodi/temp/kodi.log`
+- Verify your device supports Dolby Vision playback
