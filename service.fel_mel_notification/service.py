@@ -4,7 +4,7 @@ import subprocess
 import time
 
 # Ruta al script bash
-SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_top_left.sh"
+SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_notification.sh"
 
 while not xbmc.Monitor().abortRequested():
     # Espera a que un reproductor inicie
