@@ -64,8 +64,5 @@ fel-mel-addon/
 ├── fel_mel_notification.sh             # Detection script (goes to userdata)
 └── service.fel_mel_notification/       # Kodi addon folder
     ├── addon.xml                       # Addon manifest
-    ├── service.py                      # Python service
-    └── resources/                      # Icons for notifications
-        ├── fel_icon.png                # FEL notification icon
-        └── mel_icon.png                # MEL notification icon
+    └── service.py                      # Python service
 ```

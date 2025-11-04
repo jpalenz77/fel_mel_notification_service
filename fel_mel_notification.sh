@@ -11,13 +11,9 @@ sleep 3
 # Read source type
 SRC_VALUE=$(cat "$SRC_FMT" 2>/dev/null | tr -d '\0')
 
-# Icon paths
-FEL_ICON="/storage/.kodi/addons/service.fel_mel_notification/resources/fel_icon.png"
-MEL_ICON="/storage/.kodi/addons/service.fel_mel_notification/resources/mel_icon.png"
-
 # Function to show notification
 show_notification() {
-    kodi-send --action="Notification($1,$2,10000,$3)"
+    kodi-send --action="Notification($1,$2,10000)"
 }
 
 # Only if it's Dolby Vision, check FEL/MEL
@@ -29,8 +25,8 @@ if echo "$SRC_VALUE" | grep -qi "Dolby"; then
     NEW_LOGS=$(echo "$AFTER" | grep -Fvx -f <(echo "$BEFORE"))
 
     if echo "$NEW_LOGS" | grep -q "el_mode:1"; then
-        show_notification "Dolby Vision" "FEL detected" "$FEL_ICON"
+        show_notification "Dolby Vision" "FEL detected"
     elif echo "$NEW_LOGS" | grep -q "el_mode:0"; then
-        show_notification "Dolby Vision" "MEL detected" "$MEL_ICON"
+        show_notification "Dolby Vision" "MEL detected"
     fi
 fi
