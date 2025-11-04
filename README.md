@@ -68,6 +68,18 @@ systemctl restart kodi
 
 Or reboot your CoreELEC device.
 
+### 5. Enable the Add-on in Kodi
+
+After restarting Kodi, you need to activate the add-on:
+
+1. Go to **Settings** → **Add-ons**
+2. Select **My add-ons**
+3. Navigate to **Services**
+4. Find **FEL/MEL Notification Service**
+5. Click on it and select **Enable**
+
+The add-on will now run automatically in the background and monitor your video playback.
+
 ---
 
 ## File Contents
