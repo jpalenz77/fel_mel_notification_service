@@ -13,6 +13,16 @@ A Kodi service add-on that automatically detects and displays Dolby Vision profi
 
 ---
 
+## Example of Notifications
+
+### FEL Detection
+![FEL Notification Example](pics/fel.jpg)
+
+### MEL Detection
+![MEL Notification Example](pics/mel.jpg)
+
+---
+
 ## Requirements
 
 - **CoreELEC** (Amlogic CPM builds)
@@ -93,16 +103,16 @@ import xbmcgui
 import subprocess
 import time
 
-# Ruta al script bash
+# Path to bash script
 SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_notification.sh"
 
 while not xbmc.Monitor().abortRequested():
-    # Espera a que un reproductor inicie
+    # Wait for a player to start
     if xbmc.Player().isPlayingVideo():
-        # Ejecuta tu script
+        # Execute your script
         subprocess.Popen([SCRIPT_PATH])
 
-        # Esperar a que termine la reproducción para no volver a ejecutarlo
+        # Wait for playback to finish to avoid running it again
         while xbmc.Player().isPlayingVideo():
             if xbmc.Monitor().abortRequested():
                 break
@@ -118,21 +128,21 @@ while not xbmc.Monitor().abortRequested():
 DEBUG_PATH="/sys/class/amdolby_vision/debug"
 SRC_FMT="/sys/class/video_poll/primary_src_fmt"
 
-# Espera breve al inicio para que la info de video esté lista
+# Brief wait at the start for video info to be ready
 sleep 3
 
-# Salir si no hay información de video
+# Exit if there's no video information
 [ ! -f "$SRC_FMT" ] && exit 0
 
-# Leer tipo de fuente
+# Read source type
 SRC_VALUE=$(cat "$SRC_FMT" 2>/dev/null | tr -d '\0')
 
-# Función para mostrar notificación
+# Function to show notification
 show_notification() {
     kodi-send --action="Notification($1,$2,10000)"
 }
 
-# Solo si es Dolby Vision, comprobamos FEL/MEL
+# Only if it's Dolby Vision, check FEL/MEL
 if echo "$SRC_VALUE" | grep -qi "Dolby"; then
     BEFORE=$(dmesg | tail -n 300)
     echo dv_el > "$DEBUG_PATH" 2>/dev/null
@@ -152,7 +162,7 @@ fi
 
 ## Usage
 
-1. **Play Dolby Vision content**: A notification will appear showing either "FEL (Profile 7)" or "MEL (Profile 8)"
+1. **Play Dolby Vision content**: A notification will appear showing either "FEL detected" or "MEL detected"
 2. **SDR/HDR10 content**: No notification will be displayed
 3. **Notification duration**: 10 seconds (adjustable in script)
 
@@ -176,7 +186,7 @@ ls -l /storage/.kodi/userdata/fel_mel_notification.sh
 
 Increase the `sleep` value in `fel_mel_notification.sh`:
 ```bash
-sleep 3  # Increase from 2 to 3 seconds
+sleep 4  # Increase from 3 to 4 seconds
 ```
 
 ### Testing the Detection Script
@@ -207,6 +217,7 @@ kodi-send --action="Notification(Your Title,Your Message,Duration)"
 
 - **Detection Method**: Analyzes kernel messages after triggering `dv_el` debug flag
 - **FEL Detection**: Looks for `el_mode:1` in dmesg output
+- **MEL Detection**: Looks for `el_mode:0` in dmesg output
 - **Performance**: Minimal overhead, runs only at playback start
 
 ---

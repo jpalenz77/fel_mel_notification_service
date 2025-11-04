@@ -3,16 +3,16 @@ import xbmcgui
 import subprocess
 import time
 
-# Ruta al script bash
+# Path to bash script
 SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_notification.sh"
 
 while not xbmc.Monitor().abortRequested():
-    # Espera a que un reproductor inicie
+    # Wait for a player to start
     if xbmc.Player().isPlayingVideo():
-        # Ejecuta tu script
+        # Execute your script
         subprocess.Popen([SCRIPT_PATH])
 
-        # Esperar a que termine la reproducción para no volver a ejecutarlo
+        # Wait for playback to finish to avoid running it again
         while xbmc.Player().isPlayingVideo():
             if xbmc.Monitor().abortRequested():
                 break
