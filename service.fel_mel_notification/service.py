@@ -1,19 +1,21 @@
 import xbmc
+import xbmcgui
 import subprocess
+import time
 
-SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_notification.sh"
+# Ruta al script bash
+SCRIPT_PATH = "/storage/.kodi/userdata/fel_mel_top_left.sh"
 
-class PlaybackMonitor(xbmc.Player):
-    def onPlayBackStarted(self):
-        try:
-            subprocess.Popen([SCRIPT_PATH])
-        except Exception as e:
-            xbmc.log(f"FEL/MEL Service Error: {str(e)}", xbmc.LOGERROR)
+while not xbmc.Monitor().abortRequested():
+    # Espera a que un reproductor inicie
+    if xbmc.Player().isPlayingVideo():
+        # Ejecuta tu script
+        subprocess.Popen([SCRIPT_PATH])
 
-if __name__ == "__main__":
-    monitor = xbmc.Monitor()
-    player = PlaybackMonitor()
-    
-    while not monitor.abortRequested():
-        if monitor.waitForAbort(1):
-            break
+        # Esperar a que termine la reproducción para no volver a ejecutarlo
+        while xbmc.Player().isPlayingVideo():
+            if xbmc.Monitor().abortRequested():
+                break
+            time.sleep(1)
+
+    time.sleep(1)
