@@ -7,7 +7,7 @@ A Kodi service add-on that automatically detects and displays Dolby Vision profi
 ## Features
 
 - **Automatic Detection**: Identifies Dolby Vision FEL (Profile 7) or MEL (Profile 8) using CoreELEC system files
-- **Unobtrusive Notifications**: Shows a brief notification only at playback start
+- **Unobtrusive Notifications**: Shows a brief notification only at playback start with custom icons
 - **Smart Filtering**: Ignores SDR and HDR10 content to avoid notification spam
 - **CoreELEC Optimized**: Designed specifically for CoreELEC Amlogic CPM builds
 
@@ -27,6 +27,7 @@ A Kodi service add-on that automatically detects and displays Dolby Vision profi
 
 - **CoreELEC** (Amlogic CPM builds)
 - **Kodi** 19+ (Python 3.x)
+
 ---
 
 ## Installation
@@ -147,9 +148,13 @@ sleep 3
 # Read source type
 SRC_VALUE=$(cat "$SRC_FMT" 2>/dev/null | tr -d '\0')
 
+# Icon paths
+FEL_ICON="/storage/.kodi/addons/service.fel_mel_notification/resources/fel_icon.png"
+MEL_ICON="/storage/.kodi/addons/service.fel_mel_notification/resources/mel_icon.png"
+
 # Function to show notification
 show_notification() {
-    kodi-send --action="Notification($1,$2,10000)"
+    kodi-send --action="Notification($1,$2,10000,$3)"
 }
 
 # Only if it's Dolby Vision, check FEL/MEL
@@ -161,9 +166,9 @@ if echo "$SRC_VALUE" | grep -qi "Dolby"; then
     NEW_LOGS=$(echo "$AFTER" | grep -Fvx -f <(echo "$BEFORE"))
 
     if echo "$NEW_LOGS" | grep -q "el_mode:1"; then
-        show_notification "Dolby Vision" "FEL detected"
+        show_notification "Dolby Vision" "FEL detected" "$FEL_ICON"
     elif echo "$NEW_LOGS" | grep -q "el_mode:0"; then
-        show_notification "Dolby Vision" "MEL detected"
+        show_notification "Dolby Vision" "MEL detected" "$MEL_ICON"
     fi
 fi
 ```
@@ -210,6 +215,14 @@ Run manually during Dolby Vision playback:
 
 ## Customization
 
+### Change Notification Icons
+
+The add-on includes custom icons for FEL and MEL notifications located in:
+- `/storage/.kodi/addons/service.fel_mel_notification/resources/fel_icon.png`
+- `/storage/.kodi/addons/service.fel_mel_notification/resources/mel_icon.png`
+
+To use your own icons, simply replace these files with your custom images (PNG or JPG format recommended, 256x256 pixels or smaller).
+
 ### Change Notification Position
 
 Notification position depends on your Kodi skin settings. Check skin documentation for notification placement options.
@@ -218,7 +231,16 @@ Notification position depends on your Kodi skin settings. Check skin documentati
 
 Edit the `kodi-send` commands in `fel_mel_notification.sh`:
 ```bash
-kodi-send --action="Notification(Your Title,Your Message,Duration)"
+kodi-send --action="Notification(Your Title,Your Message,Duration,IconPath)"
+```
+
+### Adjust Notification Duration
+
+Change the duration value (in milliseconds) in the `show_notification` function:
+```bash
+show_notification() {
+    kodi-send --action="Notification($1,$2,15000,$3)"  # 15 seconds instead of 10
+}
 ```
 
 ---
